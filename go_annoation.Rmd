@@ -316,29 +316,59 @@ cat("Saved plot_3_MF_enrichment_scatter.pdf\n")
 
 # --- 11. COMBINE ALL THREE PLOTS AND SAVE (FINAL ROBUST PATCHWORK LOGIC with added margins) ---
 
-# 1. Define plots without legends AND with increased internal margins
-plot_bp_no_legend <- p_bp + theme(legend.position = "none", plot.margin = margin(5.5, 5.5, 5.5, 5.5, "mm"))
-plot_cc_no_legend <- p_cc + theme(legend.position = "none", plot.margin = margin(5.5, 5.5, 5.5, 5.5, "mm"))
-plot_mf_no_legend <- p_mf + theme(legend.position = "none", plot.margin = margin(5.5, 5.5, 5.5, 5.5, "mm"))
 
-# 2. Use wrap_plots explicitly to combine CC and MF horizontally (bottom row)
-bottom_row <- wrap_plots(plot_cc_no_legend, plot_mf_no_legend, nrow = 1)
+# --- CRITICAL ASSUMPTION ---
+# This script assumes 'p_bp', 'p_cc', and 'p_mf' are already created ggplot objects 
+# and that they include their desired titles and aesthetics (Color/Size mapping).
 
-# 3. Use wrap_plots explicitly to combine BP (top) and bottom_row (bottom) vertically
-combined_plot <- wrap_plots(plot_bp_no_legend, bottom_row, ncol = 1, heights = c(1.2, 1))
+# --- 1. SET UP THE PLOT STRUCTURE ---
 
-# 4. Apply global settings (title, collected legend)
-combined_plot <- combined_plot + 
-                 plot_layout(guides = "collect") + # Collect all legends
-                 plot_annotation(title = "Combined Gene Ontology Enrichment Analysis",
-                                 theme = theme(plot.title = element_text(face = "bold", hjust = 0.5, size = 18))) & 
-                 theme(legend.position = "bottom", legend.box.margin = margin(t=15), text = element_text(size = 14)) # Apply global theme
+# The patchwork syntax '/' means stack plots vertically.
+# The patchwork syntax '+' means place plots side-by-side horizontally.
 
+# The layout: Plot A on top (full width), Plot B and C on the bottom (half width each).
+# By default, patchwork maintains the legends within each subplot.
+combined_plots <- p_bp / (p_cc + p_mf)
+
+# --- 2. APPLY GLOBAL STYLING ---
+
+# Use the 'plot_layout' to ensure A takes up as much space as B+C combined.
+# The 'guides = "collect"' argument is commented out, as we are intentionally NOT collecting them.
+final_plot <- combined_plots + 
+    plot_layout(
+        ncol = 1,
+        # Give Plot A roughly the same height as the B+C row combined
+        heights = c(1.2, 1) 
+    ) +
+    plot_annotation(
+        title = "Combined Gene Ontology Enrichment Analysis (Divided Layout)",
+        theme = theme(
+            # Style the main figure title
+            plot.title = element_text(face = "bold", hjust = 0.5, size = 18)
+        )
+    ) & # The '&' operator applies the following theme elements to ALL subplots
+    theme(
+        text = element_text(size = 12),
+        plot.margin = margin(5.5, 5.5, 5.5, 5.5, "mm") 
+    )
+
+# --- 3. Save the Plot ---
 pdf("plot_4_Combined_GO_Analysis.pdf", width = 16, height = 16)
-print(combined_plot)
+print(final_plot)
 dev.off()
 cat("Saved plot_4_Combined_GO_Analysis.pdf (All three plots combined).\n")
 
+
+png("plot_4_Combined_GO_Analysis.png", 
+    width = 16, 
+    height = 16, 
+    units = "in", # Set the units to inches
+    res = 300)    # Set resolution to 300 DPI for high quality
+
+print(final_plot)
+dev.off()
+cat("Saved plot_4_Combined_GO_Analysis.pnf (All three plots combined).\n")
+ 
 
 # Save the final data with the new plotting coordinates and metrics
 write.csv(final_data, "go_coordinates_and_metrics.csv", row.names = FALSE)
